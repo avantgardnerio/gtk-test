@@ -11,3 +11,5 @@ glib = "*"
 gtk = {version = "*", features =["v3_24_9"]}
 gdk = "*"
 parquet = "51.0.0"
+arrow-schema = "51.0.0"
+arrow-array = "51.0.0"

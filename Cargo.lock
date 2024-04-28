@@ -865,6 +865,8 @@ dependencies = [
 name = "gtk-test"
 version = "0.1.0"
 dependencies = [
+ "arrow-array",
+ "arrow-schema",
  "gdk 0.18.0",
  "gio 0.9.1",
  "glib 0.18.5",

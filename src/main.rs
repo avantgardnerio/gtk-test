@@ -8,6 +8,8 @@ use gtk::{Builder, Window, Button, MenuItem, FileChooserDialog, TreeView, TreeSt
 
 use std::env::args;
 use std::fs::File;
+use arrow_array::StringArray;
+use arrow_schema::DataType;
 use gdk::gio::ListStore;
 use gio::ListStoreBuilder;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
@@ -56,12 +58,22 @@ fn build_ui(application: &gtk::Application) {
         }
         tree.set_headers_visible(true);
 
-        let values1 = (0..batch.num_rows()).map(|i| format!("Hello {}", i).to_value()).collect::<Vec<_>>();
-        let values2 = (0..batch.num_rows()).map(|i| format!("Bye {}", i).to_value()).collect::<Vec<_>>();
-        for row_idx in 0..batch.num_rows() {
-            let iter = store.insert(None, row_idx as i32);
-            store.set_value(&iter, 1, values1.get(row_idx).unwrap());
-        }
+        let row_iters = (0..batch.num_rows()).map(|_| store.append(None)).collect::<Vec<_>>();
+        let data = batch.columns().iter().enumerate().map(|(col_idx, col)| {
+            let vals = match col.data_type() {
+                DataType::Utf8 => {
+                    let col = col.as_any().downcast_ref::<StringArray>().unwrap();
+                    let vals = row_iters.iter().enumerate().map(|(row_idx, iter)| {
+                        let val = col.value(row_idx).to_value();
+                        store.set_value(&iter, col_idx as u32, &val);
+                        val
+                    }).collect::<Vec<_>>();
+                    vals
+                }
+                _ => vec![],
+            };
+            vals
+        }).collect::<Vec<_>>();
 
         chooser.hide();
     });
