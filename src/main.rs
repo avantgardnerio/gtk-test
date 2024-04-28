@@ -18,16 +18,6 @@ fn on_clicked(param: &[glib::Value]) -> Option<glib::Value> {
     None
 }
 
-fn append_text_column(tree: &TreeView) {
-    let column = TreeViewColumn::new();
-    let cell = CellRendererText::new();
-
-    column.set_title("Text");
-    column.pack_start(&cell, true);
-    column.add_attribute(&cell, "text", 0);
-    tree.append_column(&column);
-}
-
 fn build_ui(application: &gtk::Application) {
     let glade_src = include_str!("../resources/example.glade");
     let builder = Builder::from_string(glade_src);
@@ -37,7 +27,8 @@ fn build_ui(application: &gtk::Application) {
     let file_chooser: FileChooserDialog = builder.get_object("fileChooser1").expect("No chooser");
     file_chooser.set_application(Some(application));
 
-    file_chooser.connect_file_activated(|chooser| {
+    let tree: TreeView = builder.get_object("treeView1").expect("No TreeView");
+    file_chooser.connect_file_activated(move |chooser| {
         let file = chooser.get_file().unwrap();
         let path = file.get_path().unwrap();
         println!("file={file:?}");
@@ -49,8 +40,28 @@ fn build_ui(application: &gtk::Application) {
 
         let mut reader = builder.build().unwrap();
 
-        let record_batch = reader.next().unwrap().unwrap();
-        println!("batch has {} rows", record_batch.num_rows());
+        let batch = reader.next().unwrap().unwrap();
+        println!("batch has {} rows", batch.num_rows());
+
+        let types = batch.schema().fields().iter().map(|f| String::static_type()).collect::<Vec<_>>();
+        let left_store = TreeStore::new(types.as_slice());
+        tree.set_model(Some(&left_store));
+        for f in batch.schema().fields.iter() {
+            let column = TreeViewColumn::new();
+            let cell = CellRendererText::new();
+            column.set_title(f.name().as_str());
+            column.pack_start(&cell, true);
+            column.add_attribute(&cell, "text", 0);
+            tree.append_column(&column);
+        }
+        tree.set_headers_visible(true);
+
+        for i in 0..10 {
+            // insert_with_values takes two slices: column indices and ToValue
+            // trait objects. ToValue is implemented for strings, numeric types,
+            // bool and Object descendants
+            let _ = left_store.insert_with_values(None, None, &[0], &[&format!("Hello {}", i)]);
+        }
 
         chooser.hide();
     });
@@ -60,19 +71,6 @@ fn build_ui(application: &gtk::Application) {
         file_chooser.show_all();
         println!("Activated");
     });
-
-    let left_tree: TreeView = builder.get_object("treeView1").expect("No TreeView");
-    let left_store = TreeStore::new(&[String::static_type()]);
-    left_tree.set_model(Some(&left_store));
-    append_text_column(&left_tree);
-    left_tree.set_headers_visible(true);
-
-    for i in 0..10 {
-        // insert_with_values takes two slices: column indices and ToValue
-        // trait objects. ToValue is implemented for strings, numeric types,
-        // bool and Object descendants
-        let _ = left_store.insert_with_values(None, None, &[0], &[&format!("Hello {}", i)]);
-    }
 
     window.set_application(Some(application));
     window.set_title("Test");

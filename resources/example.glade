@@ -198,16 +198,25 @@
           </packing>
         </child>
         <child>
-          <object class="GtkTreeView" id="treeView1">
+          <object class="GtkScrolledWindow">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
-            <property name="enable-grid-lines">both</property>
-            <child internal-child="selection">
-              <object class="GtkTreeSelection"/>
+            <property name="hscrollbar-policy">always</property>
+            <property name="vscrollbar-policy">always</property>
+            <property name="shadow-type">in</property>
+            <property name="overlay-scrolling">False</property>
+            <child>
+              <object class="GtkTreeView" id="treeView1">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection"/>
+                </child>
+              </object>
             </child>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
