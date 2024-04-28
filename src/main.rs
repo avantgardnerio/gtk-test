@@ -2,9 +2,8 @@ extern crate gtk;
 extern crate gio;
 
 use gtk::prelude::*;
-use gio::prelude::*;
 
-use gtk::{Builder, Window, Button, MenuItem, FileChooserDialog, TreeView, TreeStore, TreeViewColumn, CellRendererText};
+use gtk::{Builder, Window, Button, FileChooserDialog, TreeView, TreeStore, TreeViewColumn, CellRendererText};
 
 use std::env::args;
 use std::fs::File;
@@ -21,19 +20,19 @@ fn on_clicked(param: &[glib::Value]) -> Option<glib::Value> {
 }
 
 fn build_ui(application: &gtk::Application) {
-    let glade_src = include_str!("../resources/example.glade");
+    let glade_src = include_str!("../resources/gtk4test.ui");
     let builder = Builder::from_string(glade_src);
 
-    let window: Window = builder.get_object("window1").expect("Couldn't get window");
+    let window: Window = builder.object("window1").expect("Couldn't get window");
 
-    let file_chooser: FileChooserDialog = builder.get_object("fileChooser1").expect("No chooser");
+    let file_chooser: FileChooserDialog = builder.object("fileChooser1").expect("No chooser");
     file_chooser.set_application(Some(application));
 
-    let tree: TreeView = builder.get_object("treeView1").expect("No TreeView");
-    file_chooser.connect_file_activated(move |chooser| {
-        let file = chooser.get_file().unwrap();
-        let path = file.get_path().unwrap();
-        println!("file={file:?}");
+    let tree: TreeView = builder.object("treeView1").expect("No TreeView");
+    file_chooser.connect_response(move |chooser, resp_type| {
+        let file = chooser.file().unwrap();
+        let path = file.path().unwrap();
+        println!("file={file:?} resp_type={resp_type:?}");
 
         let file = File::open(path).unwrap();
 
@@ -78,19 +77,18 @@ fn build_ui(application: &gtk::Application) {
         chooser.hide();
     });
 
-    let btn: MenuItem = builder.get_object("button1").expect("Cant get button");
-    btn.connect_activate(move |_| {
-        file_chooser.show_all();
+    let btn: Button = builder.object("btnFileOpen").expect("Cant get button");
+    btn.connect_clicked(move |_| {
+        file_chooser.show();
         println!("Activated");
     });
 
     window.set_application(Some(application));
-    window.set_title("Test");
 
-    window.connect_delete_event(|_, _| {
-        gtk::main_quit();
-        Inhibit(true)
-    });
+    // window.connect_delete_event(|_, _| {
+    //     gtk::main_quit();
+    //     Inhibit(true)
+    // });
 
     // builder.connect_signals(|builder, handler_name| {
     //     match handler_name {
@@ -100,19 +98,18 @@ fn build_ui(application: &gtk::Application) {
     //     }
     // });
 
-    window.show_all();
+    window.show();
 }
 
 fn main() {
     let application = gtk::Application::new(
         Some("com.test.app"),
         Default::default(),
-    )
-        .expect("Initialization failed...");
+    );
 
     application.connect_activate(|app| {
         build_ui(app);
     });
 
-    application.run(&args().collect::<Vec<_>>());
+    application.run();
 }
