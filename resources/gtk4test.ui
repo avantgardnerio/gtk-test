@@ -6,17 +6,16 @@
   <object class="GtkApplicationWindow" id="window1">
     <property name="name">Parquet Viewer</property>
     <property name="title">Parquet Viewer</property>
+    <property name="vexpand">True</property>
     <child>
-      <object class="GtkListBox">
-        <property name="hexpand">True</property>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
         <property name="vexpand">True</property>
         <child>
           <object class="GtkBox">
             <child>
               <object class="GtkButton" id="btnFileOpen">
-                <property name="icon-name">folder-open</property>
                 <property name="label">Open</property>
-                <property name="vexpand">True</property>
               </object>
             </child>
           </object>
@@ -27,20 +26,16 @@
             <property name="vexpand">True</property>
             <child>
               <object class="GtkTreeView" id="treeView1">
-                <property name="enable-grid-lines">both</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
               </object>
             </child>
           </object>
         </child>
-        <child>
-          <object class="GtkTreeView"/>
-        </child>
-        <style>
-          <class name="1"/>
-          <class name="2"/>
-        </style>
       </object>
     </child>
   </object>
-  <object class="GtkFileChooserDialog" id="fileChooser1"/>
+  <object class="GtkFileChooserDialog" id="fileChooser1">
+    <property name="modal">True</property>
+  </object>
 </interface>
