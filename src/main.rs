@@ -36,7 +36,7 @@ fn build_ui(application: &gtk::Application) {
         let file = File::open(path).unwrap();
 
         let builder = ParquetRecordBatchReaderBuilder::try_new(file).unwrap();
-        println!("Converted arrow schema is: {}", builder.schema());
+        println!("Converted arrow schema is: {}", builder.schema().fields.len());
 
         let mut reader = builder.build().unwrap();
 
@@ -44,23 +44,23 @@ fn build_ui(application: &gtk::Application) {
         println!("batch has {} rows", batch.num_rows());
 
         let types = batch.schema().fields().iter().map(|f| String::static_type()).collect::<Vec<_>>();
-        let left_store = TreeStore::new(types.as_slice());
-        tree.set_model(Some(&left_store));
-        for f in batch.schema().fields.iter() {
+        let store = TreeStore::new(types.as_slice());
+        tree.set_model(Some(&store));
+        for (idx, f) in batch.schema().fields.iter().enumerate() {
             let column = TreeViewColumn::new();
             let cell = CellRendererText::new();
             column.set_title(f.name().as_str());
             column.pack_start(&cell, true);
-            column.add_attribute(&cell, "text", 0);
+            column.add_attribute(&cell, "text", idx as i32);
             tree.append_column(&column);
         }
         tree.set_headers_visible(true);
 
-        for i in 0..10 {
-            // insert_with_values takes two slices: column indices and ToValue
-            // trait objects. ToValue is implemented for strings, numeric types,
-            // bool and Object descendants
-            let _ = left_store.insert_with_values(None, None, &[0], &[&format!("Hello {}", i)]);
+        let values1 = (0..batch.num_rows()).map(|i| format!("Hello {}", i).to_value()).collect::<Vec<_>>();
+        let values2 = (0..batch.num_rows()).map(|i| format!("Bye {}", i).to_value()).collect::<Vec<_>>();
+        for row_idx in 0..batch.num_rows() {
+            let iter = store.insert(None, row_idx as i32);
+            store.set_value(&iter, 1, values1.get(row_idx).unwrap());
         }
 
         chooser.hide();
