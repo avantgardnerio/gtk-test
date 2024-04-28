@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 gio = {version = "*", features =["v2_44"]}
 glib = "*"
-gtk = {version = "*", features =["v3_16"]}
+gtk = {version = "*", features =["v3_24_9"]}
 gdk = "*"
+parquet = "51.0.0"
