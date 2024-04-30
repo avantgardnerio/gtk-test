@@ -1,17 +1,19 @@
+mod integer_object;
+
 extern crate gtk;
 extern crate gio;
 
+use std::cell::Cell;
 use gtk::prelude::*;
 
-use gtk::{Builder, Window, Button, FileChooserDialog, TreeView, TreeStore, TreeViewColumn, CellRendererText};
+use gtk::{Builder, Window, Button, FileChooserDialog, TreeView, TreeStore, TreeViewColumn, CellRendererText, SignalListItemFactory, Label, ListItem, ColumnView, SelectionModel, ColumnViewColumn, SingleSelection};
 
-use std::env::args;
 use std::fs::File;
 use arrow_array::StringArray;
 use arrow_schema::DataType;
-use gdk::gio::ListStore;
-use gio::ListStoreBuilder;
+use glib::{Object, Properties};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
+use crate::integer_object::IntegerObject;
 
 // the handler
 fn on_clicked(param: &[glib::Value]) -> Option<glib::Value> {
@@ -28,7 +30,7 @@ fn build_ui(application: &gtk::Application) {
     let file_chooser: FileChooserDialog = builder.object("fileChooser1").expect("No chooser");
     file_chooser.set_application(Some(application));
 
-    let tree: TreeView = builder.object("treeView1").expect("No TreeView");
+    let tree: ColumnView = builder.object("colView1").expect("No TreeView");
     file_chooser.connect_response(move |chooser, resp_type| {
         let file = chooser.file().unwrap();
         let path = file.path().unwrap();
@@ -45,34 +47,61 @@ fn build_ui(application: &gtk::Application) {
         println!("batch has {} rows", batch.num_rows());
 
         let types = batch.schema().fields().iter().map(|f| String::static_type()).collect::<Vec<_>>();
-        let store = TreeStore::new(types.as_slice());
-        tree.set_model(Some(&store));
+
         for (idx, f) in batch.schema().fields.iter().enumerate() {
-            let column = TreeViewColumn::new();
-            let cell = CellRendererText::new();
-            column.set_title(f.name().as_str());
-            column.pack_start(&cell, true);
-            column.add_attribute(&cell, "text", idx as i32);
+            let vector: Vec<IntegerObject> = (0..=1000).map(IntegerObject::new).collect();
+            let model = gio::ListStore::new::<IntegerObject>();
+            model.extend_from_slice(&vector);
+            let factory = SignalListItemFactory::new();
+            factory.connect_setup(move |_, list_item| {
+                let label = Label::new(None);
+                list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .set_child(Some(&label));
+            });
+            factory.connect_bind(move |_, list_item| {
+                let integer_object = list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .item()
+                    .and_downcast::<IntegerObject>()
+                    .expect("The item has to be an `IntegerObject`.");
+                let label = list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .child()
+                    .and_downcast::<Label>()
+                    .expect("The child has to be a `Label`.");
+                label.set_label(&integer_object.number().to_string());
+            });
+
+            let column = ColumnViewColumn::new(Some(f.name().as_str()), Some(factory));
             tree.append_column(&column);
         }
-        tree.set_headers_visible(true);
 
-        let row_iters = (0..batch.num_rows()).map(|_| store.append(None)).collect::<Vec<_>>();
-        let data = batch.columns().iter().enumerate().map(|(col_idx, col)| {
-            let vals = match col.data_type() {
-                DataType::Utf8 => {
-                    let col = col.as_any().downcast_ref::<StringArray>().unwrap();
-                    let vals = row_iters.iter().enumerate().map(|(row_idx, iter)| {
-                        let val = col.value(row_idx).to_value();
-                        store.set_value(&iter, col_idx as u32, &val);
-                        val
-                    }).collect::<Vec<_>>();
-                    vals
-                }
-                _ => vec![],
-            };
-            vals
-        }).collect::<Vec<_>>();
+        let vector: Vec<IntegerObject> = (0..=1000).map(IntegerObject::new).collect();
+        let model = gio::ListStore::new::<IntegerObject>();
+        model.extend_from_slice(&vector);
+        let selection_model = SingleSelection::new(Some(model));
+        tree.set_model(Some(&selection_model));
+
+        // let row_iters = (0..batch.num_rows()).map(|_| store.append(None)).collect::<Vec<_>>();
+        // let data = batch.columns().iter().enumerate().map(|(col_idx, col)| {
+        //     let vals = match col.data_type() {
+        //         DataType::Utf8 => {
+        //             let col = col.as_any().downcast_ref::<StringArray>().unwrap();
+        //             let vals = row_iters.iter().enumerate().map(|(row_idx, iter)| {
+        //                 let val = col.value(row_idx).to_value();
+        //                 store.set_value(&iter, col_idx as u32, &val);
+        //                 val
+        //             }).collect::<Vec<_>>();
+        //             vals
+        //         }
+        //         _ => vec![],
+        //     };
+        //     vals
+        // }).collect::<Vec<_>>();
 
         chooser.hide();
     });

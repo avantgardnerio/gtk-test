@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gio = {version = "*", features =["v2_44"]}
-glib = "*"
+gio = { version = "0.19.5" }
+glib = { version = "0.19.5" }
 gtk = { version = "0.8.2", package = "gtk4", features = ["v4_14"] }
-gdk = "*"
+gdk = { version = "0.8.2", package = "gdk4"}
 parquet = "51.0.0"
 arrow-schema = "51.0.0"
 arrow-array = "51.0.0"

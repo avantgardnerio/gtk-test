@@ -25,10 +25,7 @@
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <child>
-              <object class="GtkTreeView" id="treeView1">
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-              </object>
+              <object class="GtkColumnView" id="colView1"/>
             </child>
           </object>
         </child>
